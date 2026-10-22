@@ -1,11 +1,11 @@
 <svg width="64" height="64" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bgf" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#14b8a6" />
-      <stop offset="1" stop-color="#0f766e" />
+    <linearGradient id="sagef" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#AEC29C" />
+      <stop offset="1" stop-color="#879F6F" />
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="112" fill="url(#bgf)" />
-  <text x="256" y="340" font-family="Georgia, 'Times New Roman', serif" font-size="300" font-weight="700"
-        text-anchor="middle" fill="#ffffff">$</text>
+  <rect width="512" height="512" rx="112" fill="url(#sagef)" />
+  <text x="256" y="350" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif"
+        font-size="300" font-weight="700" fill="#FBF7EE">$</text>
 </svg>

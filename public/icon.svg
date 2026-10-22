@@ -1,13 +1,38 @@
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#14b8a6" />
-      <stop offset="1" stop-color="#0f766e" />
+    <linearGradient id="sage" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#AEC29C" />
+      <stop offset="1" stop-color="#879F6F" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F2CE72" />
+      <stop offset="1" stop-color="#D7A23B" />
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="112" fill="url(#bg)" />
-  <path d="M256 392c-8 0-15-4-20-10-44-50-92-88-92-140 0-42 32-74 72-74 22 0 40 10 52 28 12-18 30-28 52-28 40 0 72 32 72 74 0 52-48 90-92 140-5 6-12 10-20 10z"
-        fill="#ffffff" fill-opacity="0.16" stroke="#ffffff" stroke-width="10" stroke-opacity="0.5"/>
-  <text x="256" y="298" font-family="Georgia, 'Times New Roman', serif" font-size="190" font-weight="700"
-        text-anchor="middle" fill="#ffffff">$</text>
+
+  <rect width="512" height="512" rx="112" fill="url(#sage)" />
+
+  <!-- couple -->
+  <g>
+    <!-- bodies / shoulders -->
+    <path d="M104,432 C104,356 148,320 196,320 C244,320 288,356 288,432 Z" fill="#FBF7EE" />
+    <path d="M224,432 C224,356 268,320 316,320 C364,320 408,356 408,432 Z" fill="#FBF7EE" />
+
+    <!-- wife: long hair behind face -->
+    <path d="M316,196 C262,196 252,240 252,282 C252,320 264,342 274,352 L274,300
+             C274,262 292,244 316,244 C340,244 358,262 358,300 L358,352
+             C368,342 380,320 380,282 C380,240 370,196 316,196 Z" fill="#5D7049" />
+
+    <!-- faces -->
+    <circle cx="190" cy="256" r="50" fill="#FBF7EE" />
+    <circle cx="316" cy="258" r="48" fill="#FBF7EE" />
+
+    <!-- husband: short hair cap -->
+    <path d="M140,254 A50,50 0 0 1 240,254 Q190,222 140,254 Z" fill="#5D7049" />
+
+    <!-- money coin between them -->
+    <circle cx="256" cy="150" r="46" fill="url(#gold)" stroke="#B9822B" stroke-width="3" />
+    <text x="256" y="169" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif"
+          font-size="58" font-weight="700" fill="#FFFFFF">$</text>
+  </g>
 </svg>
