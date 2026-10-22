@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useStore } from "../state/store";
+import { signOut } from "../lib/auth";
 import { Field } from "./ui";
 
 export function Settings() {
@@ -90,9 +91,14 @@ export function Settings() {
             </button>
           </>
         ) : (
-          <p className="small">
-            Connected to <strong>Supabase</strong> — changes sync between both of your devices.
-          </p>
+          <>
+            <p className="small">
+              Connected to <strong>Supabase</strong> — changes sync between both of your devices.
+            </p>
+            <button className="btn" onClick={() => void signOut()}>
+              Sign out
+            </button>
+          </>
         )}
       </section>
 
