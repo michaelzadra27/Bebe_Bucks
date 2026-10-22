@@ -488,6 +488,50 @@ h3 {
   color: var(--brand);
 }
 
+/* Account totals ---------------------------------------------------------- */
+.totals {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.totals-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.totals-big {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.totals-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.totals-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--surface-2);
+  border-radius: 999px;
+  padding: 5px 11px;
+}
+.totals-chip .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.dot-joint {
+  background: var(--brand);
+}
+.totals-flow {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
 /* Buttons ----------------------------------------------------------------- */
 .btn {
   border: 1px solid var(--border);
@@ -825,6 +869,12 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+.preset-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 .seasonal-grid {
   display: grid;

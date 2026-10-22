@@ -31,6 +31,11 @@ export function Accounts() {
   const [editing, setEditing] = useState<Account | null>(null);
   const sorted = [...accounts].sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
 
+  const total = accounts.reduce((s, a) => s + (a.balance || 0), 0);
+  const monthlyIn = accounts.reduce((s, a) => s + monthlyContributionTotal(a), 0);
+  const ownerTotal = (owner: string) =>
+    accounts.filter((a) => a.owner === owner).reduce((s, a) => s + (a.balance || 0), 0);
+
   return (
     <div className="screen">
       <div className="screen-title">
@@ -39,6 +44,30 @@ export function Accounts() {
           + Add
         </button>
       </div>
+
+      {accounts.length > 0 && (
+        <section className="card totals">
+          <div className="totals-head">
+            <span className="ov-label">Total across all accounts</span>
+            <span className="totals-big">{money(total)}</span>
+          </div>
+          <div className="totals-breakdown">
+            {people.map((p) => (
+              <span key={p.id} className="totals-chip">
+                <span className="dot" style={{ background: p.color }} />
+                {p.name} {money(ownerTotal(p.id))}
+              </span>
+            ))}
+            <span className="totals-chip">
+              <span className="dot dot-joint" />
+              Joint {money(ownerTotal("joint"))}
+            </span>
+          </div>
+          {monthlyIn > 0 && (
+            <div className="muted small totals-flow">{money(monthlyIn)}/mo flowing in</div>
+          )}
+        </section>
+      )}
 
       {sorted.length === 0 && <p className="empty">No accounts yet.</p>}
 

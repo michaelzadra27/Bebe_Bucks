@@ -1,4 +1,5 @@
 import type { Account, Bill, HouseholdSettings, Person } from "../lib/types";
+import { PGE_MONTHLY, profileAverage, WATER_MONTHLY } from "./utilityHistory";
 
 export interface AppData {
   people: Person[];
@@ -25,8 +26,16 @@ export function makeSeed(): AppData {
     b("Mortgage", "Housing", 2200, "me", 1, { sortOrder: 0 }),
     b("Car insurance", "Insurance", 210, "me", 1, { sortOrder: 1 }),
     b("Internet", "Utilities", 85, "joint", 1, { sortOrder: 2 }),
-    b("Water", "Utilities", 90, "me", 15, { sortOrder: 3 }),
-    b("PG&E (gas)", "Utilities", 140, "me", 15, { sortOrder: 4 }),
+    b("Water", "Utilities", profileAverage(WATER_MONTHLY), "me", 15, {
+      sortOrder: 3,
+      estimateMode: "seasonal",
+      monthly: WATER_MONTHLY,
+    }),
+    b("PG&E (gas)", "Utilities", profileAverage(PGE_MONTHLY), "me", 15, {
+      sortOrder: 4,
+      estimateMode: "seasonal",
+      monthly: PGE_MONTHLY,
+    }),
     b("SMUD (electric)", "Utilities", 180, "partner", 15, { sortOrder: 5 }),
     b("AT&T", "Utilities", 140, "me", 15, { sortOrder: 6 }),
     b("Gym", "Lifestyle", 80, "me", 15, { sortOrder: 7 }),

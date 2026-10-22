@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useStore } from "../state/store";
 import { annualAverage, billAmountForMonth, percentsFor, sharesFor, thisMonth } from "../lib/finance";
+import { UTILITY_PRESETS } from "../data/utilityHistory";
 import { money, moneyCents } from "../lib/format";
 import { Field, OwnerBadge, OwnerPicker, Segmented, Sheet } from "./ui";
 import type { Bill } from "../lib/types";
@@ -310,6 +311,19 @@ function SeasonalGrid({
 
   return (
     <div className="seasonal">
+      <div className="preset-row">
+        <span className="muted small">Load history:</span>
+        {UTILITY_PRESETS.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            className="btn btn-sm"
+            onClick={() => onChange({ ...p.monthly })}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
       <div className="seasonal-grid">
         {MONTHS.map((label, i) => {
           const m = i + 1;
