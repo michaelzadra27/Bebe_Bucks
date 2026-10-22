@@ -82,7 +82,11 @@ export function Bills() {
 function BillEditor({ bill, onClose }: { bill: Bill; onClose: () => void }) {
   const { people, bills, saveBill, deleteBill } = useStore();
   // Normalize older records that predate the seasonal fields.
-  const [draft, setDraft] = useState<Bill>({ estimateMode: "flat", monthly: {}, ...bill });
+  const [draft, setDraft] = useState<Bill>({
+    ...bill,
+    estimateMode: bill.estimateMode ?? "flat",
+    monthly: bill.monthly ?? {},
+  });
   const isNew = !bills.some((b) => b.id === bill.id);
   const set = <K extends keyof Bill>(k: K, v: Bill[K]) => setDraft((d) => ({ ...d, [k]: v }));
 
