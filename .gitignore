@@ -9,3 +9,6 @@ dist-ssr
 .DS_Store
 .vscode/*
 !.vscode/extensions.json
+
+# Personal bill statements / financial source docs — never commit
+Bill_Data/
