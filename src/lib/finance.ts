@@ -3,11 +3,36 @@
 
 import type { Account, Bill, DueBucket, Owner, Person } from "./types";
 
-/** Each person's dollar share of a bill. */
-export function sharesFor(bill: Bill, people: Person[]): Record<string, number> {
+/** Current calendar month, 1-12. */
+export function thisMonth(): number {
+  return new Date().getMonth() + 1;
+}
+
+/** The bill's effective amount for a given calendar month (1-12). */
+export function billAmountForMonth(bill: Bill, month: number): number {
+  if (bill.estimateMode === "seasonal") {
+    const v = bill.monthly?.[String(month)];
+    if (typeof v === "number" && !Number.isNaN(v)) return round2(v);
+  }
+  return bill.total;
+}
+
+/** Average of a seasonal profile's entered months (ignores blanks). */
+export function annualAverage(monthly: Record<string, number> | undefined | null): number {
+  const vals = Object.values(monthly ?? {}).filter((v) => typeof v === "number" && !Number.isNaN(v));
+  if (!vals.length) return 0;
+  return round2(vals.reduce((s, v) => s + v, 0) / vals.length);
+}
+
+/** Each person's dollar share of a given bill amount. */
+export function sharesFor(
+  bill: Bill,
+  people: Person[],
+  amount: number = bill.total,
+): Record<string, number> {
   const out: Record<string, number> = {};
   if (bill.splitType === "even") {
-    const each = people.length ? bill.total / people.length : 0;
+    const each = people.length ? amount / people.length : 0;
     for (const p of people) out[p.id] = round2(each);
   } else {
     for (const p of people) out[p.id] = round2(bill.customShares[p.id] ?? 0);
@@ -15,19 +40,24 @@ export function sharesFor(bill: Bill, people: Person[]): Record<string, number> 
   return out;
 }
 
-/** Each person's share as a percentage of the bill total. */
-export function percentsFor(bill: Bill, people: Person[]): Record<string, number> {
-  const shares = sharesFor(bill, people);
+/** Each person's share as a percentage of a given bill amount. */
+export function percentsFor(
+  bill: Bill,
+  people: Person[],
+  amount: number = bill.total,
+): Record<string, number> {
+  const shares = sharesFor(bill, people, amount);
   const out: Record<string, number> = {};
   for (const p of people) {
-    out[p.id] = bill.total > 0 ? round2((shares[p.id] / bill.total) * 100) : 0;
+    out[p.id] = amount > 0 ? round2((shares[p.id] / amount) * 100) : 0;
   }
   return out;
 }
 
 export interface BucketSummary {
   bucket: DueBucket | "all";
-  bills: Array<{ bill: Bill; shares: Record<string, number>; payer: Owner }>;
+  month: number;
+  bills: Array<{ bill: Bill; amount: number; shares: Record<string, number>; payer: Owner }>;
   /** Total cash leaving the household this cycle (bills flagged includeInHouseholdTotal). */
   householdCashDue: number;
   /** Per person: their total share, and how much they pay out to vendors. */
@@ -48,6 +78,7 @@ export function summarize(
   bills: Bill[],
   people: Person[],
   bucket: DueBucket | "all" = "all",
+  month: number = thisMonth(),
 ): BucketSummary {
   const active = bills.filter(
     (b) => b.active && (bucket === "all" || b.dueBucket === bucket),
@@ -67,17 +98,18 @@ export function summarize(
   const detail: BucketSummary["bills"] = [];
 
   for (const bill of active) {
-    const shares = sharesFor(bill, people);
-    detail.push({ bill, shares, payer: bill.payer });
+    const amount = billAmountForMonth(bill, month);
+    const shares = sharesFor(bill, people, amount);
+    detail.push({ bill, amount, shares, payer: bill.payer });
 
-    if (bill.includeInHouseholdTotal) householdCashDue += bill.total;
+    if (bill.includeInHouseholdTotal) householdCashDue += amount;
 
     for (const p of people) {
       perPerson[p.id].share += shares[p.id];
     }
 
     if (bill.payer !== "joint") {
-      perPerson[bill.payer].paysOut += bill.total;
+      perPerson[bill.payer].paysOut += amount;
       for (const p of people) {
         if (p.id !== bill.payer) {
           owed[p.id][bill.payer] += shares[p.id];
@@ -99,11 +131,27 @@ export function summarize(
 
   return {
     bucket,
+    month,
     bills: detail,
     householdCashDue: round2(householdCashDue),
     perPerson,
     net,
   };
+}
+
+/** Household cash total for each calendar month (index 0 = Jan … 11 = Dec). */
+export function monthlyHouseholdTotals(bills: Bill[]): number[] {
+  const out: number[] = [];
+  for (let m = 1; m <= 12; m++) {
+    let sum = 0;
+    for (const bill of bills) {
+      if (bill.active && bill.includeInHouseholdTotal) {
+        sum += billAmountForMonth(bill, m);
+      }
+    }
+    out.push(round2(sum));
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------

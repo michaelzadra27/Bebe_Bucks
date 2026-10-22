@@ -35,6 +35,7 @@ export interface Account {
 
 export type DueBucket = 1 | 15;
 export type SplitType = "even" | "custom";
+export type EstimateMode = "flat" | "seasonal";
 
 export interface Bill {
   id: string;
@@ -51,6 +52,10 @@ export interface Bill {
   splitType: SplitType;
   /** For custom splits: dollar share per person { [personId]: amount }. */
   customShares: Record<string, number>;
+  /** "flat" = same `total` every month; "seasonal" = per-calendar-month amounts. */
+  estimateMode: EstimateMode;
+  /** Seasonal amounts keyed by calendar month "1".."12" (Jan..Dec). */
+  monthly: Record<string, number>;
   /** When false, only the shares count toward settle-up, not the household cash total.
    *  Used for one-way bills (e.g. a partner's health insurance where you only owe a fixed share). */
   includeInHouseholdTotal: boolean;

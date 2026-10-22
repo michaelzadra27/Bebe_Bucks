@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useStore } from "../state/store";
-import { percentsFor, sharesFor } from "../lib/finance";
+import { annualAverage, billAmountForMonth, percentsFor, sharesFor, thisMonth } from "../lib/finance";
 import { money, moneyCents } from "../lib/format";
 import { Field, OwnerBadge, OwnerPicker, Segmented, Sheet } from "./ui";
 import type { Bill } from "../lib/types";
@@ -16,12 +16,16 @@ function blankBill(): Bill {
     dueDay: null,
     splitType: "even",
     customShares: {},
+    estimateMode: "flat",
+    monthly: {},
     includeInHouseholdTotal: true,
     active: true,
     notes: "",
     sortOrder: 99,
   };
 }
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export function Bills() {
   const { bills, people } = useStore();
@@ -55,13 +59,16 @@ export function Bills() {
               onClick={() => setEditing(bill)}
             >
               <div className="row-main">
-                <span className="row-name">{bill.name || "Untitled"}</span>
+                <span className="row-name">
+                  {bill.name || "Untitled"}
+                  {bill.estimateMode === "seasonal" && <span className="tag">seasonal</span>}
+                </span>
                 <span className="row-sub muted small">
                   {bill.category} · paid by <OwnerBadge owner={bill.payer} people={people} />
                   {bill.splitType === "custom" ? " · custom split" : " · 50/50"}
                 </span>
               </div>
-              <div className="row-amount">{money(bill.total)}</div>
+              <div className="row-amount">{money(billAmountForMonth(bill, thisMonth()))}</div>
             </button>
           ))}
         </div>
@@ -74,16 +81,21 @@ export function Bills() {
 
 function BillEditor({ bill, onClose }: { bill: Bill; onClose: () => void }) {
   const { people, bills, saveBill, deleteBill } = useStore();
-  const [draft, setDraft] = useState<Bill>(bill);
+  // Normalize older records that predate the seasonal fields.
+  const [draft, setDraft] = useState<Bill>({ estimateMode: "flat", monthly: {}, ...bill });
   const isNew = !bills.some((b) => b.id === bill.id);
   const set = <K extends keyof Bill>(k: K, v: Bill[K]) => setDraft((d) => ({ ...d, [k]: v }));
 
-  const shares = sharesFor(draft, people);
-  const percents = percentsFor(draft, people);
+  const editorAmount =
+    draft.estimateMode === "seasonal" ? annualAverage(draft.monthly) : Number(draft.total) || 0;
+  const shares = sharesFor(draft, people, editorAmount);
+  const percents = percentsFor(draft, people, editorAmount);
   const customSum = people.reduce((s, p) => s + (draft.customShares[p.id] ?? 0), 0);
 
   const save = async () => {
-    await saveBill({ ...draft, total: Number(draft.total) || 0 });
+    const total =
+      draft.estimateMode === "seasonal" ? annualAverage(draft.monthly) : Number(draft.total) || 0;
+    await saveBill({ ...draft, total });
     onClose();
   };
   const remove = async () => {
@@ -119,8 +131,29 @@ function BillEditor({ bill, onClose }: { bill: Bill; onClose: () => void }) {
         />
       </Field>
 
-      <div className="two-col">
-        <Field label="Amount (est.)">
+      <Field label="Category">
+        <input
+          className="input"
+          value={draft.category}
+          onChange={(e) => set("category", e.target.value)}
+        />
+      </Field>
+
+      <Field label="Amount">
+        <Segmented
+          value={draft.estimateMode}
+          options={[
+            { value: "flat", label: "Same each month" },
+            { value: "seasonal", label: "Varies by month" },
+          ]}
+          onChange={(v) => set("estimateMode", v)}
+        />
+      </Field>
+
+      {draft.estimateMode === "seasonal" ? (
+        <SeasonalGrid monthly={draft.monthly} onChange={(m) => set("monthly", m)} />
+      ) : (
+        <Field label="Monthly estimate">
           <input
             className="input"
             inputMode="decimal"
@@ -128,14 +161,7 @@ function BillEditor({ bill, onClose }: { bill: Bill; onClose: () => void }) {
             onChange={(e) => set("total", Number(e.target.value) || 0)}
           />
         </Field>
-        <Field label="Category">
-          <input
-            className="input"
-            value={draft.category}
-            onChange={(e) => set("category", e.target.value)}
-          />
-        </Field>
-      </div>
+      )}
 
       <Field label="Who pays the vendor">
         <OwnerPicker value={draft.payer} people={people} onChange={(v) => set("payer", v)} />
@@ -176,7 +202,8 @@ function BillEditor({ bill, onClose }: { bill: Bill; onClose: () => void }) {
 
       {draft.splitType === "even" ? (
         <p className="split-note">
-          Each pays <strong>{moneyCents((Number(draft.total) || 0) / 2)}</strong>.
+          Each pays <strong>{moneyCents(editorAmount / 2)}</strong>
+          {draft.estimateMode === "seasonal" ? " on average (varies by month)" : ""}.
         </p>
       ) : (
         <div className="custom-split">
@@ -198,9 +225,9 @@ function BillEditor({ bill, onClose }: { bill: Bill; onClose: () => void }) {
               </div>
             </Field>
           ))}
-          <p className={"split-note" + (Math.abs(customSum - draft.total) > 0.01 ? " warn" : "")}>
-            Shares total {moneyCents(customSum)} of {moneyCents(draft.total)}
-            {Math.abs(customSum - draft.total) > 0.01 && " — doesn’t match the bill amount"}
+          <p className={"split-note" + (Math.abs(customSum - editorAmount) > 0.01 ? " warn" : "")}>
+            Shares total {moneyCents(customSum)} of {moneyCents(editorAmount)}
+            {Math.abs(customSum - editorAmount) > 0.01 && " — doesn’t match the bill amount"}
           </p>
         </div>
       )}
@@ -245,5 +272,74 @@ function BillEditor({ bill, onClose }: { bill: Bill; onClose: () => void }) {
         .
       </p>
     </Sheet>
+  );
+}
+
+function SeasonalGrid({
+  monthly,
+  onChange,
+}: {
+  monthly: Record<string, number>;
+  onChange: (m: Record<string, number>) => void;
+}) {
+  const [paste, setPaste] = useState("");
+  const avg = annualAverage(monthly);
+  const now = thisMonth();
+
+  const setMonth = (m: number, v: string) => {
+    const next = { ...monthly };
+    if (v === "") delete next[String(m)];
+    else next[String(m)] = Number(v) || 0;
+    onChange(next);
+  };
+
+  const applyPaste = () => {
+    const nums = (paste.match(/-?\d+(?:\.\d+)?/g) ?? []).slice(0, 12).map(Number);
+    if (!nums.length) return;
+    const next: Record<string, number> = {};
+    nums.forEach((n, i) => {
+      next[String(i + 1)] = n;
+    });
+    onChange(next);
+    setPaste("");
+  };
+
+  return (
+    <div className="seasonal">
+      <div className="seasonal-grid">
+        {MONTHS.map((label, i) => {
+          const m = i + 1;
+          return (
+            <label key={m} className={"sg-cell" + (m === now ? " sg-now" : "")}>
+              <span>{label}</span>
+              <input
+                className="input sg-input"
+                inputMode="decimal"
+                placeholder="—"
+                value={monthly[String(m)] ?? ""}
+                onChange={(e) => setMonth(m, e.target.value)}
+              />
+            </label>
+          );
+        })}
+      </div>
+      <details className="seasonal-paste">
+        <summary>Quick-fill from 12 numbers</summary>
+        <textarea
+          className="input"
+          rows={2}
+          placeholder="Paste 12 amounts, Jan→Dec (commas, spaces, or new lines)"
+          value={paste}
+          onChange={(e) => setPaste(e.target.value)}
+        />
+        <button className="btn btn-sm" type="button" onClick={applyPaste}>
+          Fill months
+        </button>
+      </details>
+      <p className="split-note">
+        Average <strong>{moneyCents(avg)}</strong>/mo · this month{" "}
+        <strong>{moneyCents(monthly[String(now)] ?? 0)}</strong>
+      </p>
+    </div>
   );
 }

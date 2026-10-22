@@ -35,6 +35,8 @@ create table if not exists bills (
   due_day                    int,
   split_type                 text not null default 'even',
   custom_shares              jsonb not null default '{}'::jsonb,
+  estimate_mode              text not null default 'flat',
+  monthly                    jsonb not null default '{}'::jsonb,
   include_in_household_total boolean not null default true,
   active                     boolean not null default true,
   notes                      text not null default '',

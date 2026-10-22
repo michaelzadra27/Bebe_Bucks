@@ -87,6 +87,8 @@ function b(
     dueDay: null,
     splitType: "even",
     customShares: {},
+    estimateMode: "flat",
+    monthly: {},
     includeInHouseholdTotal: true,
     active: true,
     notes: "",

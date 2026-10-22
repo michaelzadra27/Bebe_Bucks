@@ -746,6 +746,121 @@ h3 {
   margin-top: 4px;
 }
 
+/* Month nav + year chart ------------------------------------------------- */
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.month-nav h1 {
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  text-align: center;
+  flex: 1;
+}
+.nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.yearchart {
+  padding: 14px 14px 10px;
+}
+.yearchart-head {
+  margin-bottom: 8px;
+}
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 92px;
+}
+.bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 0;
+  padding: 0;
+  height: 100%;
+}
+.bar-wrap {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.bar {
+  width: 70%;
+  min-height: 3px;
+  border-radius: 4px 4px 2px 2px;
+  background: color-mix(in srgb, var(--brand) 32%, var(--surface-2));
+  transition: height 0.2s ease;
+}
+.bar-on .bar {
+  background: linear-gradient(180deg, var(--brand-2), var(--brand));
+}
+.bar-label {
+  font-size: 10px;
+  color: var(--muted);
+}
+.bar-on .bar-label {
+  color: var(--brand);
+  font-weight: 700;
+}
+
+/* Seasonal editor -------------------------------------------------------- */
+.seasonal {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.seasonal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.sg-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.sg-cell > span {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.sg-now > span {
+  color: var(--brand);
+}
+.sg-input {
+  padding: 8px 10px;
+  font-size: 15px;
+}
+.sg-now .sg-input {
+  border-color: var(--brand);
+}
+.seasonal-paste summary {
+  font-size: 13px;
+  color: var(--brand);
+  font-weight: 600;
+  cursor: pointer;
+}
+.seasonal-paste textarea {
+  margin: 8px 0;
+}
+
 @keyframes fade {
   from {
     opacity: 0;

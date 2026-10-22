@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { futureValue, monthsToGoal, sharesFor, summarize } from "./finance";
+import {
+  billAmountForMonth,
+  futureValue,
+  monthlyHouseholdTotals,
+  monthsToGoal,
+  sharesFor,
+  summarize,
+} from "./finance";
 import type { Bill, Person } from "./types";
 
 const me: Person = { id: "me", name: "Me", color: "#0f766e" };
@@ -17,6 +24,8 @@ function bill(partial: Partial<Bill>): Bill {
     dueDay: null,
     splitType: "even",
     customShares: {},
+    estimateMode: "flat",
+    monthly: {},
     includeInHouseholdTotal: true,
     active: true,
     notes: "",
@@ -87,5 +96,41 @@ describe("savings projections", () => {
   it("months to goal finds a reasonable horizon", () => {
     const m = monthsToGoal(0, 100, 0, 1200);
     expect(m).toBe(12);
+  });
+});
+
+describe("seasonal bills", () => {
+  const gas = bill({
+    name: "PG&E",
+    payer: "me",
+    dueBucket: 15,
+    total: 87, // fallback / average
+    estimateMode: "seasonal",
+    monthly: { "2": 209.19, "8": 34.69 },
+  });
+
+  it("uses the month's amount, falling back to total when missing", () => {
+    expect(billAmountForMonth(gas, 2)).toBe(209.19);
+    expect(billAmountForMonth(gas, 8)).toBe(34.69);
+    expect(billAmountForMonth(gas, 5)).toBe(87); // no May value → fallback
+  });
+
+  it("summarize reflects the selected month", () => {
+    const feb = summarize([gas], people, 15, 2);
+    expect(feb.householdCashDue).toBe(209.19);
+    // 50/50 even split: partner owes Me half of February's bill
+    expect(feb.net).toEqual({ fromId: "partner", toId: "me", amount: 104.6 });
+
+    const aug = summarize([gas], people, 15, 8);
+    expect(aug.householdCashDue).toBe(34.69);
+    expect(aug.net).toEqual({ fromId: "partner", toId: "me", amount: 17.35 });
+  });
+
+  it("monthlyHouseholdTotals returns 12 months", () => {
+    const totals = monthlyHouseholdTotals([gas]);
+    expect(totals).toHaveLength(12);
+    expect(totals[1]).toBe(209.19); // Feb (index 1)
+    expect(totals[7]).toBe(34.69); // Aug (index 7)
+    expect(totals[4]).toBe(87); // May → fallback
   });
 });

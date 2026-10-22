@@ -1,23 +1,58 @@
 import { useState } from "react";
 import { useStore } from "../state/store";
-import { summarize, type BucketSummary } from "../lib/finance";
+import { monthlyHouseholdTotals, summarize, type BucketSummary } from "../lib/finance";
 import { money, moneyCents } from "../lib/format";
 import { OwnerBadge } from "./ui";
 import type { DueBucket } from "../lib/types";
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export function Home() {
   const { bills, people, currentPersonId } = useStore();
   const me = people.find((p) => p.id === currentPersonId) ?? people[0];
 
-  const month = new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
-  const all = summarize(bills, people, "all");
+  const [view, setView] = useState(() => {
+    const d = new Date();
+    return { year: d.getFullYear(), month: d.getMonth() + 1 }; // month 1-12
+  });
+
+  const shift = (delta: number) => {
+    setView((v) => {
+      let m = v.month + delta;
+      let y = v.year;
+      while (m > 12) {
+        m -= 12;
+        y += 1;
+      }
+      while (m < 1) {
+        m += 12;
+        y -= 1;
+      }
+      return { year: y, month: m };
+    });
+  };
+
+  const label = new Date(view.year, view.month - 1, 1).toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const all = summarize(bills, people, "all", view.month);
   const monthlyShareMe = all.perPerson[me?.id ?? ""]?.share ?? 0;
+  const yearTotals = monthlyHouseholdTotals(bills);
+  const maxTotal = Math.max(1, ...yearTotals);
+  const hasAnyBills = bills.some((b) => b.active);
 
   return (
     <div className="screen">
-      <div className="screen-title">
-        <h1>This month</h1>
-        <span className="muted">{month}</span>
+      <div className="month-nav">
+        <button className="nav-btn" onClick={() => shift(-1)} aria-label="Previous month">
+          ‹
+        </button>
+        <h1>{label}</h1>
+        <button className="nav-btn" onClick={() => shift(1)} aria-label="Next month">
+          ›
+        </button>
       </div>
 
       <div className="overview">
@@ -31,12 +66,37 @@ export function Home() {
         </div>
       </div>
 
-      <BucketCard bucket={1} summary={summarize(bills, people, 1)} />
-      <BucketCard bucket={15} summary={summarize(bills, people, 15)} />
-
-      {bills.filter((b) => b.active).length === 0 && (
-        <p className="empty">No bills yet. Add some on the Bills tab.</p>
+      {hasAnyBills && (
+        <section className="card yearchart">
+          <div className="yearchart-head">
+            <span className="muted small">Projected household bills by month</span>
+          </div>
+          <div className="bars">
+            {yearTotals.map((t, i) => {
+              const m = i + 1;
+              const on = m === view.month;
+              return (
+                <button
+                  key={m}
+                  className={"bar-col" + (on ? " bar-on" : "")}
+                  onClick={() => setView((v) => ({ ...v, month: m }))}
+                  title={`${MONTHS[i]}: ${money(t)}`}
+                >
+                  <span className="bar-wrap">
+                    <span className="bar" style={{ height: `${(t / maxTotal) * 100}%` }} />
+                  </span>
+                  <span className="bar-label">{MONTHS[i][0]}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
       )}
+
+      <BucketCard bucket={1} summary={summarize(bills, people, 1, view.month)} />
+      <BucketCard bucket={15} summary={summarize(bills, people, 15, view.month)} />
+
+      {!hasAnyBills && <p className="empty">No bills yet. Add some on the Bills tab.</p>}
     </div>
   );
 }
@@ -69,18 +129,19 @@ function BucketCard({ bucket, summary }: { bucket: DueBucket; summary: BucketSum
 
       {open && (
         <ul className="bill-lines">
-          {summary.bills.map(({ bill, shares, payer }) => (
+          {summary.bills.map(({ bill, amount, shares, payer }) => (
             <li key={bill.id} className="bill-line">
               <div className="bill-line-main">
                 <span className="bill-line-name">
                   {bill.name}
+                  {bill.estimateMode === "seasonal" && <span className="tag">seasonal</span>}
                   {!bill.includeInHouseholdTotal && (
                     <span className="tag" title="Only the shares count, not household cash">
                       share only
                     </span>
                   )}
                 </span>
-                <span className="bill-line-total">{moneyCents(bill.total)}</span>
+                <span className="bill-line-total">{moneyCents(amount)}</span>
               </div>
               <div className="bill-line-sub">
                 <span className="muted small">
